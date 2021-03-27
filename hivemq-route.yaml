@@ -1,0 +1,77 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: hivemq-mqtt
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 1883
+      name: mqtt
+      protocol: TCP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: hivemq-mqtt
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - hivemq-mqtt
+  tcp:
+  - match:
+    - port: 1883
+    route:
+    - destination:
+        host: hivemq-hivemq-operator-mqtt
+        port:
+          number: 1883
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: hivemq-cc
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: hivemq-cc
+spec:
+  host: hivemq-hivemq-operator-cc
+  trafficPolicy:
+    portLevelSettings:
+    - port:
+        number: 8080
+      loadBalancer:
+        consistentHash:
+          useSourceIp: true
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: hivemq-cc
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - hivemq-cc
+  http:
+  - route:
+    - destination:
+        host: hivemq-hivemq-operator-cc
+        port:
+          number: 8080
